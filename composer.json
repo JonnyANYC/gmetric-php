@@ -1,0 +1,7 @@
+{
+    "name": "JonnyANYC/gmetric-php",
+    "description": "A tiny, lightweight UDP client for sending Gmetric data to a local Ganglia instance.",
+    "autoload": {
+        "psr-4": { "JonnyANYC\\": "src/" }
+    }
+}
