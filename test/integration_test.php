@@ -2,4 +2,4 @@
 require __DIR__ . "/../vendor/autoload.php";
 
 
-JonnyANYC\Ganglia\Gmetric\Gmetric::sendMetric("testapp.testmetric", "UINT16", 2100, "count", "app");
+JonnyANYC\Ganglia\Gmetric\Gmetric::sendMetric("testapp.testmetric", "app", "uint16", 2100, "count", 360, 600);

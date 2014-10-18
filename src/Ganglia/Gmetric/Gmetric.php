@@ -6,12 +6,12 @@ namespace JonnyANYC\Ganglia\Gmetric;
 class Gmetric 
 {
 
-	public static function sendMetric($name, $type, $value, $unit, $group = null, $sampleRate = null)
+	public static function sendMetric($name, $group, $type, $value, $unit, $valueTTL, $metricTTL, $sampleRate = null)
 	{
 		// TODO: Check if the $sampleRate param is provided, and if so, suppress the metric selectively.
 
 		// Instantiate a Gmetric message using the input parameters.
-		$message = new GmetricMessage($name, $type, $value, $unit, $group);
+		$message = new GmetricMessage($name, $group, $type, $value, $unit, $valueTTL, $metricTTL);
 		$message->send();
 		$message = null;
 	}
