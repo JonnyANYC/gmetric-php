@@ -1,6 +1,7 @@
 <?php
 namespace JonnyANYC\Ganglia\Gmetric;
 
+
 class GmetricMessage 
 {
 	private $name;
@@ -23,62 +24,10 @@ class GmetricMessage
 		$this->metricTTL = $metricTTL;
 	}
 
-	public function send()
-	{
-		$this->sendViaFileHandle();
-	}
-
-	private function sendViaFileHandle()
-	{
-		// Open the UDP socket to send the data.
-		$socket = fsockopen("udp://localhost", 8649);
-	
-		if (!$socket) { 
-			echo "no good!";  // DEBUG
-			return;
-		}
-		
-		socket_set_blocking($socket, FALSE);
-
-		// Send the header.
-		$header = $this->getHeader();
-		//var_dump( $header );
-		$bytesWritten = fwrite($socket, $header);
-	
-		echo "$bytesWritten of " . strlen($header) . "bytes in the header.";
-		if ($bytesWritten < strlen($header)) { 
-			echo "WARN: only wrote $bytesWritten bytes of the header."; // DEBUG
-		}
-		
-		// Send the payload.
-		$payload = $this->getPayload();
-		//var_dump($payload);
-		$bytesWritten = fwrite($socket, $payload);
-
-		echo "$bytesWritten of " . strlen($payload) . "bytes in the payload.";
-		if ($bytesWritten < strlen($payload)) {
-			echo "WARN: only wrote $bytesWritten bytes of the payload."; // DEBUG
-		}
-		
-		// Close the socket.
-		fclose($socket);
-		
-		// dereference the handles.
-		$socket = null;
-		$header = null;
-		$payload = null;
-	}
-	
-	private function sendViaSocket()
-	{
-		throw new Exception("Not implemented yet.");
-	}
-
-
 	/**
 	 * Generate the header on-demand, based on the stored inputs. 
 	 */
-	private function getHeader()
+	public function getHeader()
 	{
 		$header = "";
 		$this->packIntAsXdr($header, 128);
@@ -104,7 +53,7 @@ class GmetricMessage
 	/**
 	 * Generate the payload on-demand, based on the stored inputs. 
 	 */
-	private function getPayload()
+	public function getPayload()
 	{
 		$payload = "";
 		$this->packIntAsXdr($payload, 128 + 5);
