@@ -1,5 +1,5 @@
 <?php
-namespace JonnyANYC\Ganglia\Gmetric;
+namespace jonnyanyc\Ganglia\Gmetric;
 
 
 class Gmetric 

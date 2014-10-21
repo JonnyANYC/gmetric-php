@@ -1,5 +1,5 @@
 <?php
-namespace JonnyANYC\Ganglia\Gmetric;
+namespace jonnyanyc\Ganglia\Gmetric;
 
 
 class GmetricMessage 
@@ -61,7 +61,7 @@ class GmetricMessage
 		$this->packStringAsXdr($payload, $this->name);
 		$this->packIntAsXdr($payload, 0);  // is spoofed
 		$this->packStringAsXdr($payload, '%s');
-		$this->packStringAsXdr($payload, $this->value . "");
+		$this->packStringAsXdr($payload, (string)$this->value);
 
 		return $payload;
 	}
@@ -75,16 +75,9 @@ class GmetricMessage
 	private function packStringAsXdr(&$buffer, $string)
 	{
 		$this->packIntAsXdr($buffer, strlen($string));
-		
-		$buffer .= $string;
-		
-		$overage = strlen($string) % 4;
-		if ( $overage ) { 
-			while ($overage < 4 ) {
-				$buffer .= "\0";
-				$overage++;
-			}
-		}
+
+		$paddedLength = ceil(strlen($string) / 4) * 4;
+		$buffer .= pack('a' . $paddedLength, $string);
 	}
 
 }
