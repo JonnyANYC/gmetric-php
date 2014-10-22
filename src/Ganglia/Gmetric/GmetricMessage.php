@@ -31,7 +31,7 @@ class GmetricMessage
 	{
 		$header = "";
 		$this->packIntAsXdr($header, 128);
-		$this->packStringAsXdr($header, "test");
+		$this->packStringAsXdr($header, "hostname");
 		$this->packStringAsXdr($header, $this->name);
 		$this->packIntAsXdr($header, 0);  // is spoofed
 		$this->packStringAsXdr($header, $this->type);
@@ -57,7 +57,7 @@ class GmetricMessage
 	{
 		$payload = "";
 		$this->packIntAsXdr($payload, 128 + 5);
-		$this->packStringAsXdr($payload, "test");
+		$this->packStringAsXdr($payload, "hostname");
 		$this->packStringAsXdr($payload, $this->name);
 		$this->packIntAsXdr($payload, 0);  // is spoofed
 		$this->packStringAsXdr($payload, '%s');
