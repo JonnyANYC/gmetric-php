@@ -41,41 +41,58 @@ class Gmetric
 	
 	private function sendViaFileHandle($message)
 	{
-		// Open the UDP socket to send the data.
-		$socket = fsockopen("udp://" . $this->host, $this->port);
+		try { 
+			
+			// Open the UDP socket to send the data.
+			$socket = fsockopen("udp://" . $this->host, $this->port);
+		
+			if (!$socket) {
+				// TODO: Log.warn: "Socket failed to open"
+				throw new Exception("Cancelling send.");
+			}
 	
-		if (!$socket) {
-			echo "Socket failed to open!";  // TODO: log as debug output
+			socket_set_blocking($socket, FALSE);
+		
+			// Send the header.
+			$header = $message->getHeader();
+			$bytesWritten = fwrite($socket, $header);
+		
+			if ($bytesWritten < strlen($header)) {
+				// TODO: Log.warn "Only wrote $bytesWritten bytes of the header."
+				throw new Exception("Cancelling send.");
+			}
+		
+			// Send the payload.
+			$payload = $message->getPayload();
+			$bytesWritten = fwrite($socket, $payload);
+		
+			if ($bytesWritten < strlen($payload)) {
+				// TODO: Log.warn "Only wrote $bytesWritten bytes of the payload."
+				throw new Exception("Cancelling send.");
+			}
+
+			// Close the socket.
+			fclose($socket);
+		
+			// dereference the handles.
+			$socket = null;
+			$header = null;
+			$payload = null;
+			
+		} catch (Exception $e) { 
+
+			// TODO: Move this to a finally block (PHP 5.5).
+			if ($socket) {
+				try { 
+					fclose($socket);
+				} catch (Exception $e2) {}
+			}
+			
+			$socket = null;
 			return;
 		}
-
-		socket_set_blocking($socket, FALSE);
-	
-		// Send the header.
-		$header = $message->getHeader();
-		$bytesWritten = fwrite($socket, $header);
-	
-		if ($bytesWritten < strlen($header)) {
-			echo "WARN: only wrote $bytesWritten bytes of the header."; // TODO: log as debug output
-		}
-	
-		// Send the payload.
-		$payload = $message->getPayload();
-		$bytesWritten = fwrite($socket, $payload);
-	
-		if ($bytesWritten < strlen($payload)) {
-			echo "WARN: only wrote $bytesWritten bytes of the payload."; // TODO: log as debug output
-		}
-	
-		// Close the socket.
-		fclose($socket);
-	
-		// dereference the handles.
-		$socket = null;
-		$header = null;
-		$payload = null;
 	}
-	
+
 	private function sendViaSocket()
 	{
 		throw new Exception("Not implemented yet.");
