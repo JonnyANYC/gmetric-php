@@ -8,7 +8,7 @@ of code.
 
 ## Installation
 
-Install via [Composer](getcomposer.org):
+Install via [Composer](http://getcomposer.org):
 
 ```javascript
     "require": {

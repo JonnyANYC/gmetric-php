@@ -44,22 +44,24 @@ class Gmetric
 		try { 
 			
 			// Open the UDP socket to send the data.
-			$socket = fsockopen("udp://" . $this->host, $this->port);
+			$socket = @fsockopen("udp://" . $this->host, $this->port);
 		
 			if (!$socket) {
 				// TODO: Log.warn: "Socket failed to open"
-				throw new Exception("Cancelling send.");
+				// TODO: Use a finally block instead (PHP 5.5).
+				throw new \Exception("Cancelling send.");
 			}
-	
+
 			socket_set_blocking($socket, FALSE);
-		
+
 			// Send the header.
 			$header = $message->getHeader();
 			$bytesWritten = fwrite($socket, $header);
 		
 			if ($bytesWritten < strlen($header)) {
 				// TODO: Log.warn "Only wrote $bytesWritten bytes of the header."
-				throw new Exception("Cancelling send.");
+				// TODO: Use a finally block instead (PHP 5.5).
+				throw new \Exception("Cancelling send.");
 			}
 		
 			// Send the payload.
@@ -68,7 +70,8 @@ class Gmetric
 		
 			if ($bytesWritten < strlen($payload)) {
 				// TODO: Log.warn "Only wrote $bytesWritten bytes of the payload."
-				throw new Exception("Cancelling send.");
+				// TODO: Use a finally block instead (PHP 5.5).
+				throw new \Exception("Cancelling send.");
 			}
 
 			// Close the socket.
@@ -79,13 +82,13 @@ class Gmetric
 			$header = null;
 			$payload = null;
 			
-		} catch (Exception $e) { 
+		} catch (\Exception $e) { 
 
 			// TODO: Move this to a finally block (PHP 5.5).
 			if ($socket) {
 				try { 
 					fclose($socket);
-				} catch (Exception $e2) {}
+				} catch (\Exception $e2) {}
 			}
 			
 			$socket = null;
@@ -95,7 +98,7 @@ class Gmetric
 
 	private function sendViaSocket()
 	{
-		throw new Exception("Not implemented yet.");
+		throw new \Exception("Not implemented yet.");
 	}
 
 	// TODO: Consider implementing a counter feature that stores incoming data in a static variable.
