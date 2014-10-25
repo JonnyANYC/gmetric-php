@@ -52,11 +52,11 @@ class Gmetric
 				throw new \Exception("Cancelling send.");
 			}
 
-			socket_set_blocking($socket, FALSE);
+			@socket_set_blocking($socket, FALSE);
 
 			// Send the header.
 			$header = $message->getHeader();
-			$bytesWritten = fwrite($socket, $header);
+			$bytesWritten = @fwrite($socket, $header);
 		
 			if ($bytesWritten < strlen($header)) {
 				// TODO: Log.warn "Only wrote $bytesWritten bytes of the header."
@@ -66,7 +66,7 @@ class Gmetric
 		
 			// Send the payload.
 			$payload = $message->getPayload();
-			$bytesWritten = fwrite($socket, $payload);
+			$bytesWritten = @fwrite($socket, $payload);
 		
 			if ($bytesWritten < strlen($payload)) {
 				// TODO: Log.warn "Only wrote $bytesWritten bytes of the payload."
@@ -75,7 +75,7 @@ class Gmetric
 			}
 
 			// Close the socket.
-			fclose($socket);
+			@fclose($socket);
 		
 			// dereference the handles.
 			$socket = null;
@@ -87,7 +87,7 @@ class Gmetric
 			// TODO: Move this to a finally block (PHP 5.5).
 			if ($socket) {
 				try { 
-					fclose($socket);
+					@fclose($socket);
 				} catch (\Exception $e2) {}
 			}
 			
