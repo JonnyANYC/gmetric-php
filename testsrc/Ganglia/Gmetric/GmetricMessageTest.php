@@ -7,7 +7,7 @@ class GmetricMessageTest extends PHPUnit_Framework_TestCase {
 
 	public function testGetHeader() {
 
-		$unpackFormatter = "NmsgType/NhostnameLen/A8hostname/NnameLen/A12name/NisSpoof/NtypeLen/A8type/Nname2Len/A12name2"
+		$unpackFormatter = "NmsgType/NhostnameLen/A4hostname/NnameLen/A12name/NisSpoof/NtypeLen/A8type/Nname2Len/A12name2"
 			. "/NunitLen/A12unit/Nslope/NvalueTTL/NmetricTTL/NxFieldCount/NgroupFieldNameLen/A8groupFieldName/NgroupLen/A4group";
 
 		$basicMessage = $this->createBasicMessage();
@@ -26,7 +26,7 @@ class GmetricMessageTest extends PHPUnit_Framework_TestCase {
 
 	public function testGetPayload() {
 
-		$unpackFormatter = "NmsgType/NhostnameLen/A8hostname/NnameLen/A12name/NisSpoof/NvarTemplateLen/A4varTemplate"
+		$unpackFormatter = "NmsgType/NhostnameLen/A4hostname/NnameLen/A12name/NisSpoof/NvarTemplateLen/A4varTemplate"
 			. "/NvalueLen/A4value";
 
 		$basicMessage = $this->createBasicMessage();

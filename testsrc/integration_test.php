@@ -7,4 +7,4 @@ $gmetric->sendMetric("testapp.testmetric1", "app", "uint16", 2100, "count", 1800
 $gmetric->sendMetric("testapp.testmetric2", "app", "float", 1.23, "dollars", 1800, 86400);
 $gmetric->sendMetric("testapp.testmetric3", "app", "string", "up", "active", 1800, 86400);
 
-echo "Test complete.";
+echo "Test complete.\n";

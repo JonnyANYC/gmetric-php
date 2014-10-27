@@ -24,16 +24,16 @@ class Gmetric
 
 	// TODO: Consider implementing a function that pulls the host and port settings from the /etc/ganglia/gmond.conf file. 
 	
-	public function sendMetric($name, $group, $type, $value, $unit, $valueTTL, $metricTTL, $sampleRate = null)
+	public function sendMetric($name, $group, $type, $value, $unit, $valueTTL, $metricTTL, $slope = null, $spoofedHostname = null, $sampleRate = null)
 	{
 		// TODO: Check if the $sampleRate param is provided, and if so, suppress the metric selectively.
 
 		// Instantiate a Gmetric message using the input parameters.
-		$message = new GmetricMessage($name, $group, $type, $value, $unit, $valueTTL, $metricTTL);
+		$message = new GmetricMessage($name, $group, $type, $value, $unit, $valueTTL, $metricTTL, $slope, $spoofedHostname);
 		$this->send($message);
 		$message = null;
 	}
-	
+
 	private function send($message) { 
 		
 		$this->sendViaFileHandle($message);
