@@ -40,11 +40,11 @@ class GmetricMessage
 				$this->slope = 3;
 		}
 
-		if (strlen($spoofedHostname) > 0  &&  !is_null($spoofedHostname)) { 
+		if (!is_null($spoofedHostname) && strlen($spoofedHostname) > 0) { 
 			$this->spoof = $spoofedHostname;
 			$this->isSpoofed = 1;
 		} else { 
-			$this->spoof = 'none';
+			$this->spoof = gethostname();
 			$this->isSpoofed = 0;
 		}
 	}
@@ -62,29 +62,48 @@ class GmetricMessage
 		$format .= 'Na' . $this->getPaddedLength($this->name);
 		$format .= 'Na' . $this->getPaddedLength($this->unit);
 		$format .= 'NNNN';  // slope, tmax, dmax, number of extra name+value pairs
-		$format .= 'Na' . $this->getPaddedLength('GROUP');
-		$format .= 'Na' . $this->getPaddedLength($this->group);
 
-		return pack($format, 	128,
-								$this->getPaddedLength($this->spoof),
+		$header = pack($format, 	128,
+								strlen($this->spoof),
 								$this->spoof,
-								$this->getPaddedLength($this->name),
+								strlen($this->name),
 								$this->name, 
 								$this->isSpoofed,
-								$this->getPaddedLength($this->type),
+								strlen($this->type),
 								$this->type, 
-								$this->getPaddedLength($this->name),
+								strlen($this->name),
 								$this->name,
-								$this->getPaddedLength($this->unit),
+								strlen($this->unit),
 								$this->unit, 
 								$this->slope,
 								$this->valueTTL,  // tmax
 								$this->metricTTL,  // dmax
-								1,  // number of extra name+value pairs
-								$this->getPaddedLength('GROUP'),
-								'GROUP', 
-								$this->getPaddedLength($this->group),
-								$this->group);
+								1 + $this->isSpoofed);  // number of extra name+value pairs
+
+		
+		if ($this->isSpoofed) { 
+
+			$spoofFormat = 'Na' . $this->getPaddedLength('SPOOF_HOST');
+			$spoofFormat .= 'Na' . $this->getPaddedLength($this->spoof);
+				
+			$header .= pack($spoofFormat, 	strlen('SPOOF_HOST'),
+											'SPOOF_HOST', 
+											strlen($this->spoof),
+											$this->spoof);
+		}
+
+		if (!is_null($this->group) && strlen($this->group) > 0) { 
+
+			$groupFormat = 'Na' . $this->getPaddedLength('GROUP');
+			$groupFormat .= 'Na' . $this->getPaddedLength($this->group);
+		
+			$header .= pack($groupFormat,	strlen('GROUP'),
+											'GROUP',
+											strlen($this->group),
+											$this->group);
+		}
+		
+		return $header;
 	}
 	
 	/**
@@ -100,14 +119,14 @@ class GmetricMessage
 		$format .= 'NA' . $this->getPaddedLength($this->value);
 		
 		return pack($format, 	128+5,  // message type
-								$this->getPaddedLength($this->spoof),
+								strlen($this->spoof),
 								$this->spoof,
-								$this->getPaddedLength($this->name),
+								strlen($this->name),
 								$this->name,
 								$this->isSpoofed,
-								$this->getPaddedLength('%s'),
+								strlen('%s'),
 								'%s',  // format string?
-								$this->getPaddedLength($this->value),
+								strlen($this->value),
 								$this->value);				
 	}
 	

@@ -7,8 +7,11 @@ class GmetricMessageTest extends PHPUnit_Framework_TestCase {
 
 	public function testGetHeader() {
 
-		$unpackFormatter = "NmsgType/NhostnameLen/A4hostname/NnameLen/A12name/NisSpoof/NtypeLen/A8type/Nname2Len/A12name2"
-			. "/NunitLen/A12unit/Nslope/NvalueTTL/NmetricTTL/NxFieldCount/NgroupFieldNameLen/A8groupFieldName/NgroupLen/A4group";
+		$hostname = gethostname();
+		$hostnameLen = (int) ceil(strlen($hostname) / 4) * 4;
+		$unpackFormatter = "NmsgType/NhostnameLen/A" . $hostnameLen . "hostname/NnameLen/A12name/NisSpoof/NtypeLen"
+			. "/A8type/Nname2Len/A12name2/NunitLen/A12unit/Nslope/NvalueTTL/NmetricTTL/NxFieldCount/NgroupFieldNameLen"
+			. "/A8groupFieldName/NgroupLen/A4group";
 
 		$basicMessage = $this->createBasicMessage();
 		$header = $basicMessage->getHeader();
@@ -26,8 +29,11 @@ class GmetricMessageTest extends PHPUnit_Framework_TestCase {
 
 	public function testGetPayload() {
 
-		$unpackFormatter = "NmsgType/NhostnameLen/A4hostname/NnameLen/A12name/NisSpoof/NvarTemplateLen/A4varTemplate"
-			. "/NvalueLen/A4value";
+		$hostname = gethostname();
+		$hostnameLen = (int) ceil(strlen($hostname) / 4) * 4;
+		
+		$unpackFormatter = "NmsgType/NhostnameLen/A" . $hostnameLen . "hostname/NnameLen/A12name/NisSpoof"
+			. "/NvarTemplateLen/A4varTemplate/NvalueLen/A4value";
 
 		$basicMessage = $this->createBasicMessage();
 		$payload = $basicMessage->getPayload();
