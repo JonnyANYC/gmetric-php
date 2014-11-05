@@ -11,73 +11,126 @@ class GmetricMessage
 	private $unit;
 	private $valueTTL;
 	private $metricTTL;
+	private $slope;
+	private $spoof;
+	private $isSpoofed;
 
-	public function __construct($name, $group, $type, $value, $unit, $valueTTL, $metricTTL)
+	public function __construct($name, $group, $type, $value, $unit, $valueTTL, $metricTTL, $slope = null, $spoofedHostname = null)
 	{
 		// TODO: Throw an exception if we don't have correct info to form a valid Gmetric message.
 		$this->name = $name;
 		$this->group = $group;
 		$this->type = $type;
-		$this->value = $value;
+		$this->value = (string)$value;
 		$this->unit = $unit;
 		$this->valueTTL = $valueTTL;
 		$this->metricTTL = $metricTTL;
+		
+		switch (strtolower($slope)) { 
+			case 'zero':
+				$this->slope = 0;
+				break;
+			case 'positive':
+				$this->slope = 1;
+				break;
+			case 'negative':
+				$this->slope = 2;
+				break;
+			default:
+				$this->slope = 3;
+		}
+
+		if (!is_null($spoofedHostname) && strlen($spoofedHostname) > 0) { 
+			$this->spoof = $spoofedHostname;
+			$this->isSpoofed = 1;
+		} else { 
+			$this->spoof = gethostname();
+			$this->isSpoofed = 0;
+		}
 	}
 
 	/**
 	 * Generate the header on-demand, based on the stored inputs. 
 	 */
-	public function getHeader()
-	{
-		$header = "";
-		$this->packIntAsXdr($header, 128);
-		$this->packStringAsXdr($header, "test");
-		$this->packStringAsXdr($header, $this->name);
-		$this->packIntAsXdr($header, 0);  // is spoofed
-		$this->packStringAsXdr($header, $this->type);
-		$this->packStringAsXdr($header, $this->name);
-		$this->packStringAsXdr($header, $this->unit);
-		$this->packIntAsXdr($header, 3); // slope
-		$this->packIntAsXdr($header, $this->valueTTL);  // tmax
-		$this->packIntAsXdr($header, $this->metricTTL);  // dmax
+	public function getHeader() {
+		
+		$format = 'N';   // message type (128)
+		$format .= 'Na' . $this->getPaddedLength($this->spoof);
+		$format .= 'Na' . $this->getPaddedLength($this->name);
+		$format .= 'N';  // is spoofed
+		$format .= 'Na' . $this->getPaddedLength($this->type);
+		$format .= 'Na' . $this->getPaddedLength($this->name);
+		$format .= 'Na' . $this->getPaddedLength($this->unit);
+		$format .= 'NNNN';  // slope, tmax, dmax, number of extra name+value pairs
 
-		// Add 1 extra field for the group param
-		$this->packIntAsXdr($header, 1);  // Indicate how many extra name/value pairs.
-		$this->packStringAsXdr($header, "GROUP");
-		$this->packStringAsXdr($header, $this->group);
-		// TODO Consider creating a generic XDR encoder that builds a formatter and passes all fields to pack().
+		$header = pack($format, 	128,
+								strlen($this->spoof),
+								$this->spoof,
+								strlen($this->name),
+								$this->name, 
+								$this->isSpoofed,
+								strlen($this->type),
+								$this->type, 
+								strlen($this->name),
+								$this->name,
+								strlen($this->unit),
+								$this->unit, 
+								$this->slope,
+								$this->valueTTL,  // tmax
+								$this->metricTTL,  // dmax
+								1 + $this->isSpoofed);  // number of extra name+value pairs
+
+		
+		if ($this->isSpoofed) { 
+
+			$spoofFormat = 'Na' . $this->getPaddedLength('SPOOF_HOST');
+			$spoofFormat .= 'Na' . $this->getPaddedLength($this->spoof);
+				
+			$header .= pack($spoofFormat, 	strlen('SPOOF_HOST'),
+											'SPOOF_HOST', 
+											strlen($this->spoof),
+											$this->spoof);
+		}
+
+		if (!is_null($this->group) && strlen($this->group) > 0) { 
+
+			$groupFormat = 'Na' . $this->getPaddedLength('GROUP');
+			$groupFormat .= 'Na' . $this->getPaddedLength($this->group);
+		
+			$header .= pack($groupFormat,	strlen('GROUP'),
+											'GROUP',
+											strlen($this->group),
+											$this->group);
+		}
 		
 		return $header;
 	}
-
+	
 	/**
 	 * Generate the payload on-demand, based on the stored inputs. 
 	 */
-	public function getPayload()
-	{
-		$payload = "";
-		$this->packIntAsXdr($payload, 128 + 5);
-		$this->packStringAsXdr($payload, "test");
-		$this->packStringAsXdr($payload, $this->name);
-		$this->packIntAsXdr($payload, 0);  // is spoofed
-		$this->packStringAsXdr($payload, '%s');
-		$this->packStringAsXdr($payload, (string)$this->value);
+	public function getPayload() { 
 
-		return $payload;
+		$format = 'N';  // message type
+		$format .= 'Na' . $this->getPaddedLength($this->spoof);
+		$format .= 'Na' . $this->getPaddedLength($this->name);
+		$format .= 'N';  // is spoofed
+		$format .= 'NA' . $this->getPaddedLength('%s');
+		$format .= 'NA' . $this->getPaddedLength($this->value);
+		
+		return pack($format, 	128+5,  // message type
+								strlen($this->spoof),
+								$this->spoof,
+								strlen($this->name),
+								$this->name,
+								$this->isSpoofed,
+								strlen('%s'),
+								'%s',  // format string?
+								strlen($this->value),
+								$this->value);				
 	}
 	
-	private function packIntAsXdr(&$buffer, $int)
-	{
-		$intBytes = pack('N', $int);
-		$buffer .= $intBytes;
+	private function getPaddedLength($string) { 
+		return (int) ceil(strlen($string) / 4) * 4;
 	}
-	
-	private function packStringAsXdr(&$buffer, $string)
-	{
-		$this->packIntAsXdr($buffer, strlen($string));
-
-		$paddedLength = ceil(strlen($string) / 4) * 4;
-		$buffer .= pack('a' . $paddedLength, $string);
-	}
-
 }
