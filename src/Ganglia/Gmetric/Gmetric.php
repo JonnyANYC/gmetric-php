@@ -22,19 +22,62 @@ class Gmetric
 		}
 	}
 
-	// TODO: Consider implementing a function that pulls the host and port settings from the /etc/ganglia/gmond.conf file. 
+    /**
+     * If called, this instance of Gmetric will use the configuration values in the local Gmond conf file.
+     * Additionally, this instance will conform to the logic of the official Gmetric binary as much as possible.
+     * This includes the following logic changes:
+     *     1) The host and port passed to the constructor are ignored. The values in the Gmond config file are used instead.
+     *     2) The spoof hostname value is set automatically if the config file specifies a host override.
+     * 
+     * Currently, the Gmetric class won't use multiple UDP channels in the Gmond conf file. Only the first one will be used.
+     * Additionally, only the transport details are altered to match the official Gmetric binary.
+     * Other Gmetric settings remain distinct, such as the default values for the metric TTL (30 days for this class 
+     * vs. indefinite for the binary). This is because the programatic context is inherently different from the 
+     * command-line context.
+     * @param string $configFile The absolute path to the local Gmond conf file. Defaults to /etc/ganglia/gmond.conf.
+     */
+    public function useGmondConfigFile($configFile = '/etc/ganglia/gmond.conf') {
+
+        throw new Exception("Not implemented yet.");
+        
+	} 
 	
-	public function sendMetric($name, $group, $type, $value, $unit, $valueTTL, $metricTTL, $slope = null, $spoofedHostname = null, $sampleRate = null)
-	{
-		// TODO: Check if the $sampleRate param is provided, and if so, suppress the metric selectively.
+	
+	/**
+	 * Send a metric to Ganglia.
+	 * 
+	 * @param string $name
+	 * @param string $group
+	 * @param string $type
+	 * @param string $value
+	 * @param string $unit
+	 * @param int $valueTTL The amount of time that this measurement should be considered valid, in seconds. Defaults to 60.
+	 * @param int $metricTTL The amount of time that this metric should be considered active if no measurements are received, 
+	 *     in seconds. Defaults to 30 days. NOTE: This is different from the official binary, which defaults to 0 (indefinite).
+	 * @param string $spoofedHostname
+	 * @param string $counter Pass "counter" to instruct Ganglia to store the deltas of the given values. Otherwise, store the values as-is.
+	 * @param float $sampleRate
+	 */
+    public function sendMetric( $name, 
+                                $group, 
+                                $type, 
+                                $value, 
+                                $unit, 
+                                $valueTTL = null, 
+                                $metricTTL = null, 
+                                $spoofedHostname = null, 
+                                $counter = null, 
+                                $sampleRate = null) {
+
+		// TODO: Check if the $sampleRate param is provided, and if so, suppress the metric selectively to reduce chatter.
 
 		// Instantiate a Gmetric message using the input parameters.
-		$message = new GmetricMessage($name, $group, $type, $value, $unit, $valueTTL, $metricTTL, $slope, $spoofedHostname);
+		$message = new GmetricMessage($name, $group, $type, $value, $unit, $valueTTL, $metricTTL, $spoofedHostname, $counter);
 		$this->send($message);
 		$message = null;
 	}
 
-	private function send($message) { 
+	protected function send($message) { 
 		
 		$this->sendViaFileHandle($message);
 	}

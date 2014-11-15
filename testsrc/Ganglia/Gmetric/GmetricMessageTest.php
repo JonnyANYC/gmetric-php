@@ -5,7 +5,32 @@ use jonnyanyc\Ganglia\Gmetric\GmetricMessage;
 
 class GmetricMessageTest extends PHPUnit_Framework_TestCase { 
 
-	public function testGetHeader() {
+    public function testDefaults() { 
+
+        $expected = new GmetricMessage($this->basicMessage["name"],
+                                       $this->basicMessage["group"],
+                                       $this->basicMessage["type"],
+                                       $this->basicMessage["value"],
+                                       $this->basicMessage["unit"], 
+                                       60, 
+                                       3600 * 24 * 30, 
+                                       null,
+                                       'positive');
+
+        $message = new GmetricMessage($this->basicMessage["name"],
+                        $this->basicMessage["group"],
+                        $this->basicMessage["type"],
+                        $this->basicMessage["value"],
+                        $this->basicMessage["unit"]);
+        
+        
+        $this->assertEquals($expected, $message);
+    }
+
+    /**
+     * @dataProvider messageProvider
+     */
+	public function testGetHeader($message) {
 
 		$hostname = gethostname();
 		$hostnameLen = (int) ceil(strlen($hostname) / 4) * 4;
@@ -13,8 +38,7 @@ class GmetricMessageTest extends PHPUnit_Framework_TestCase {
 			. "/A8type/Nname2Len/A12name2/NunitLen/A12unit/Nslope/NvalueTTL/NmetricTTL/NxFieldCount/NgroupFieldNameLen"
 			. "/A8groupFieldName/NgroupLen/A4group";
 
-		$basicMessage = $this->createBasicMessage();
-		$header = $basicMessage->getHeader();
+		$header = $message->getHeader();
 		$unpackedHeader = unpack($unpackFormatter, $header);
 		
 		// TODO: Assert that the lengths are correct as well.
@@ -27,7 +51,10 @@ class GmetricMessageTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals($this->basicMessage["metricTTL"], $unpackedHeader["metricTTL"]);
 	}
 
-	public function testGetPayload() {
+    /**
+     * @dataProvider messageProvider
+     */
+	public function testGetPayload($message) {
 
 		$hostname = gethostname();
 		$hostnameLen = (int) ceil(strlen($hostname) / 4) * 4;
@@ -35,8 +62,7 @@ class GmetricMessageTest extends PHPUnit_Framework_TestCase {
 		$unpackFormatter = "NmsgType/NhostnameLen/A" . $hostnameLen . "hostname/NnameLen/A12name/NisSpoof"
 			. "/NvarTemplateLen/A4varTemplate/NvalueLen/A4value";
 
-		$basicMessage = $this->createBasicMessage();
-		$payload = $basicMessage->getPayload();
+		$payload = $message->getPayload();
 		$unpackedPayload = unpack($unpackFormatter, $payload);
 		
 		// TODO: Assert that the lengths are correct as well.
@@ -55,7 +81,7 @@ class GmetricMessageTest extends PHPUnit_Framework_TestCase {
 		"metricTTL" => 2,
 	);
 
-	private function createBasicMessage() {
+	public function messageProvider() {
 
 		$message = new GmetricMessage(	$this->basicMessage["name"],
 										$this->basicMessage["group"],
@@ -64,7 +90,6 @@ class GmetricMessageTest extends PHPUnit_Framework_TestCase {
 										$this->basicMessage["unit"],
 										$this->basicMessage["valueTTL"],
 										$this->basicMessage["metricTTL"]);
-		return $message;
+		return array(array($message));
 	}
-
 }
