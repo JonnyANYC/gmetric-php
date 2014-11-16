@@ -28,33 +28,47 @@ class GmetricMessageTest extends PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @dataProvider messageProvider
+     * @dataProvider messageDataProvider
      */
-	public function testGetHeader($message) {
+	public function testGetHeader($messageParams, $message) {
 
 		$hostname = gethostname();
 		$hostnameLen = (int) ceil(strlen($hostname) / 4) * 4;
-		$unpackFormatter = "NmsgType/NhostnameLen/A" . $hostnameLen . "hostname/NnameLen/A12name/NisSpoof/NtypeLen"
-			. "/A8type/Nname2Len/A12name2/NunitLen/A12unit/Nslope/NvalueTTL/NmetricTTL/NxFieldCount/NgroupFieldNameLen"
-			. "/A8groupFieldName/NgroupLen/A4group";
+		$unpackFormatter = 'NmsgType/NhostnameLen/A' . $hostnameLen . 'hostname/NnameLen/A12name/NisSpoof/NtypeLen'
+			. '/A8type/Nname2Len/A12name2/NunitLen/A12unit/Nslope/NvalueTTL/NmetricTTL/NxFieldCount';
+			
+		if (isset($messageParams['group'])) { 
+		    $unpackFormatter .= '/NgroupFieldNameLen/A8groupFieldName/NgroupLen/A4group';
+		}
 
 		$header = $message->getHeader();
 		$unpackedHeader = unpack($unpackFormatter, $header);
 		
 		// TODO: Assert that the lengths are correct as well.
 		// TODO: extract method
-		$this->assertEquals($this->basicMessage["name"], $unpackedHeader["name"]);
-		$this->assertEquals($this->basicMessage["group"], $unpackedHeader["group"]);
+		$this->assertEquals($this->basicMessage['name'], $unpackedHeader['name']);
+
+		if (isset($messageParams['group'])) { 
+		    $this->assertEquals(1, $unpackedHeader['xFieldCount']);
+		    $this->assertEquals($messageParams['group'], $unpackedHeader['group']);
+		}
+
 		$this->assertEquals($this->basicMessage["type"], $unpackedHeader["type"]);
 		$this->assertEquals($this->basicMessage["unit"], $unpackedHeader["unit"]);
-		$this->assertEquals($this->basicMessage["valueTTL"], $unpackedHeader["valueTTL"]);
-		$this->assertEquals($this->basicMessage["metricTTL"], $unpackedHeader["metricTTL"]);
+		
+		if (isset($messageParams['valueTTL'])) { 
+            $this->assertEquals($messageParams['valueTTL'], $unpackedHeader["valueTTL"]);
+		}
+
+		if (isset($messageParams['metricTTL'])) { 
+		    $this->assertEquals($messageParams['metricTTL'], $unpackedHeader["metricTTL"]);
+		}
 	}
 
     /**
-     * @dataProvider messageProvider
+     * @dataProvider messageDataProvider
      */
-	public function testGetPayload($message) {
+	public function testGetPayload($messageParams, $message) {
 
 		$hostname = gethostname();
 		$hostnameLen = (int) ceil(strlen($hostname) / 4) * 4;
@@ -77,19 +91,45 @@ class GmetricMessageTest extends PHPUnit_Framework_TestCase {
 		"type" => "uint16",
 		"value" => -1,
 		"unit" => "test units",
-		"valueTTL" => 1,
-		"metricTTL" => 2,
+		"valueTTL" => 3600,
+		"metricTTL" => 186400,
 	);
 
-	public function messageProvider() {
+	public function messageDataProvider() {
 
-		$message = new GmetricMessage(	$this->basicMessage["name"],
-										$this->basicMessage["group"],
-										$this->basicMessage["type"],
-										$this->basicMessage["value"],
-										$this->basicMessage["unit"],
-										$this->basicMessage["valueTTL"],
-										$this->basicMessage["metricTTL"]);
-		return array(array($message));
+	    $inputs = array();
+
+		$inputs[] = array( 
+		    array('group' => $this->basicMessage["group"]),
+            new GmetricMessage($this->basicMessage["name"],
+                               $this->basicMessage["group"],
+                               $this->basicMessage["type"],
+                               $this->basicMessage["value"],
+                               $this->basicMessage["unit"])
+        );
+
+		$inputs[] = array( 
+		    array('group' => $this->basicMessage["group"],
+		          'valueTTL' => $this->basicMessage["valueTTL"],
+                  'metricTTL' => $this->basicMessage["metricTTL"]),
+		    new GmetricMessage($this->basicMessage["name"],
+                               $this->basicMessage["group"],
+                               $this->basicMessage["type"],
+                               $this->basicMessage["value"],
+                               $this->basicMessage["unit"], 
+		                       $this->basicMessage["valueTTL"],
+                               $this->basicMessage["metricTTL"])
+        );
+
+		$inputs[] = array( 
+		    array(),
+            new GmetricMessage($this->basicMessage["name"],
+                               null,
+                               $this->basicMessage["type"],
+                               $this->basicMessage["value"],
+                               $this->basicMessage["unit"])
+        );
+
+		return $inputs;
 	}
 }

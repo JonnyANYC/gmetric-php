@@ -7,13 +7,13 @@ class GmetricTest extends PHPUnit_Framework_TestCase
 {
     public function testSend()
     {
-        $stubGmetric = $this->getMock('\jonnyanyc\Ganglia\Gmetric\Gmetric', array('send'));
-        
         $expectedGmetricMessage = new GmetricMessage("test.name", 
                                                      "test.group", 
                                                      "uint16", 
                                                      12345, 
                                                      "units");
+        
+        $stubGmetric = $this->getMock('\jonnyanyc\Ganglia\Gmetric\Gmetric', array('send'));
         
         $stubGmetric->expects($this->once())
                     ->method('send')

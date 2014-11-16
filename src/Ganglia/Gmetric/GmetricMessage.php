@@ -4,6 +4,11 @@ namespace jonnyanyc\Ganglia\Gmetric;
 
 class GmetricMessage 
 {
+    // Arithmetic expressions aren't allowed when defining constants? Really, PHP?
+    const ONE_MINUTE = 60;
+    const ONE_HOUR = 3600;
+    const ONE_DAY = 86400;
+ 
 	private $name;
 	private $group;
 	private $type;
@@ -43,14 +48,14 @@ class GmetricMessage
 		if ($valueTTL != null && is_int($valueTTL)) {
 			$this->valueTTL = $valueTTL;
 		} else { 
-			$this->valueTTL = 60;
+			$this->valueTTL = self::ONE_MINUTE;
 		}
 
 		if ($metricTTL != null && is_int($metricTTL)) {
 			$this->metricTTL = $metricTTL;
 		} else {
 		    // Note: the default metric TTL is 30 days, whereas the official binary's default is 0 (indefinite). 
-			$this->metricTTL = 3600 * 24 * 30;
+			$this->metricTTL = self::ONE_DAY * 30;
 		}
 
 		if ($spoofedHostname != null && strlen($spoofedHostname) > 0) { 
