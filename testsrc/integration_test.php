@@ -1,10 +1,14 @@
 <?php
 require __DIR__ . "/../vendor/autoload.php";
 
-$gmetric = new jonnyanyc\Ganglia\Gmetric\Gmetric("172.31.28.45", 8666);
+use jonnyanyc\Ganglia\Gmetric\Gmetric;
+use jonnyanyc\Ganglia\Gmetric\GmetricMessage;
 
-$gmetric->sendMetric("testapp.testmetric1", "app", "uint16", 2100, "count", 1800, 86400, null, "monitoring-master1:monitoring-master1");
-$gmetric->sendMetric("testapp.testmetric2", "app", "float", 1.23, "dollars", 1800, 86400, null, "monitoring-master1:monitoring-master1");
-$gmetric->sendMetric("testapp.testmetric3", "app", "string", "up", "active", 1800, 86400, null, "monitoring-master1:monitoring-master1");
+$gmetric = new Gmetric();
+$gmetric->useConfigFile();
+
+$gmetric->sendMetric("testapp.testmetric1", "app", "uint16", 2100, "count", GmetricMessage::ONE_HOUR /2, GmetricMessage::ONE_DAY, "monitoring-master1:monitoring-master1");
+$gmetric->sendMetric("testapp.testmetric2", "app", "float", 1.23, "dollars", GmetricMessage::ONE_HOUR /2, GmetricMessage::ONE_DAY, "monitoring-master1:monitoring-master1");
+$gmetric->sendMetric("testapp.testmetric3", "app", "string", "up", "active", GmetricMessage::ONE_HOUR /2, GmetricMessage::ONE_DAY, "monitoring-master1:monitoring-master1");
 
 echo "Test complete.\n";

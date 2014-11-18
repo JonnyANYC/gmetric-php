@@ -23,10 +23,10 @@ class GmetricMessage
 	public function __construct($name, $group, $type, $value, $unit, $valueTTL = null, $metricTTL = null, $spoofedHostname = null, $counter = null) {
 
 		// TODO: Filter invalid characters. 
-		if (strlen($name) > 0) { 
+		if (!empty($name)) { 
 			$this->name = $name;
 		} else { 
-			throw new Exception('"Name" must be a valid string.');
+			throw new \Exception('"name" must be a valid string.');
 		}
 
 		// A null (missing) group is valid input. The message is constructed properly in this case.
@@ -58,7 +58,7 @@ class GmetricMessage
 			$this->metricTTL = self::ONE_DAY * 30;
 		}
 
-		if ($spoofedHostname != null && strlen($spoofedHostname) > 0) { 
+		if (!empty($spoofedHostname)) { 
 			// TODO: Filter invalid characters.
 			$this->spoof = $spoofedHostname;
 			$this->isSpoofed = 1;
@@ -73,7 +73,7 @@ class GmetricMessage
             $this->slope = 3;
 		}
 	}
-
+    
 	/**
 	 * Generate the header on-demand, based on the stored inputs. 
 	 */
@@ -148,8 +148,8 @@ class GmetricMessage
 		$format .= 'Na' . $this->getPaddedLength($this->spoof);
 		$format .= 'Na' . $this->getPaddedLength($this->name);
 		$format .= 'N';  // is spoofed
-		$format .= 'NA' . $this->getPaddedLength('%s');
-		$format .= 'NA' . $this->getPaddedLength($this->value);
+		$format .= 'Na' . $this->getPaddedLength('%s');  // format string
+		$format .= 'Na' . $this->getPaddedLength($this->value);
 		
 		return pack($format, 	128+5,  // message type
 								strlen($this->spoof),
@@ -158,7 +158,7 @@ class GmetricMessage
 								$this->name,
 								$this->isSpoofed,
 								strlen('%s'),
-								'%s',  // format string?
+								'%s',
 								strlen($this->value),
 								$this->value);				
 	}
