@@ -14,7 +14,6 @@ class GmetricMessageTest extends PHPUnit_Framework_TestCase {
                                        $this->basicMessage["unit"], 
                                        60, 
                                        3600 * 24 * 30, 
-                                       null,
                                        'positive');
 
         $message = new GmetricMessage($this->basicMessage["name"],

@@ -1,6 +1,7 @@
 <?php
 namespace jonnyanyc\Ganglia\Gmetric;
 
+use Exception;
 
 class GmetricMessage 
 {
@@ -20,13 +21,13 @@ class GmetricMessage
 	private $isSpoofed;
 	private $slope;
 	
-	public function __construct($name, $group, $type, $value, $unit, $valueTTL = null, $metricTTL = null, $spoofedHostname = null, $counter = null) {
+	public function __construct($name, $group, $type, $value, $unit, $valueTTL = null, $metricTTL = null, $counter = null, $spoofedHostname = null) {
 
 		// TODO: Filter invalid characters. 
 		if (!empty($name)) { 
 			$this->name = $name;
 		} else { 
-			throw new \Exception('"name" must be a valid string.');
+			throw new Exception('"name" must be a valid string.');
 		}
 
 		// A null (missing) group is valid input. The message is constructed properly in this case.
@@ -35,9 +36,14 @@ class GmetricMessage
 		$this->group = $group;
 
 		// FIXME: Use an enum to enforce a valid type.
-		$this->type = $type;
-
-		// FIXME: Is an empty or null string a valid input?
+		if (!empty($type)) {
+		    $this->type = $type;
+		} else {
+		    throw new Exception('"type" must be a valid Gmetric type.');
+		}
+		
+		// FIXME: Is an empty or null string a valid input? Gmetric binary only requires that the option appears on the cmd line.
+		// TODO: At the least, validate that inputs are numeric for the numeric types.
 		// TODO: Filter invalid characters.
 		$this->value = (string)$value;
 
@@ -58,19 +64,22 @@ class GmetricMessage
 			$this->metricTTL = self::ONE_DAY * 30;
 		}
 
+			if (strtolower($counter) === 'counter') {
+            $this->slope = 1;
+		} else { 
+            $this->slope = 3;
+		}
+
 		if (!empty($spoofedHostname)) { 
+		    if (strpos($spoofedHostname, ":") === false) { 
+		        throw new Exception('The "spoofed hostname" is invalid. It must be of the form "ip:host".');
+		    }
 			// TODO: Filter invalid characters.
 			$this->spoof = $spoofedHostname;
 			$this->isSpoofed = 1;
 		} else { 
 			$this->spoof = gethostname();
 			$this->isSpoofed = 0;
-		}
-
-		if (strtolower($counter) === 'counter') {
-            $this->slope = 1;
-		} else { 
-            $this->slope = 3;
 		}
 	}
     
