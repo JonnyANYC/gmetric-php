@@ -8,6 +8,8 @@ of code in your application.
 
 The message is sent optimistically, via one-way, non-blocking UDP datagrams. This keeps the cost of tracking metrics as close to zero as possible.
 
+
+
 ## Installation
 
 The easiest way to install is to use [Composer](http://getcomposer.org):
@@ -24,6 +26,7 @@ Or add the package to your composer.json file manually:
     }
 ```
 
+
 ## Usage
 
 ```php
@@ -34,19 +37,18 @@ $gmetric->sendMetric("app1.job2.method3.failures", "app", "uint16", 3, "failures
 // send more metrics if needed
 ```
 
-The data is sent to localhost at UDP port 8649 by default. You can specify the host and UDP port when you instantiate the Gmetric object.
+If you're running `gmond` locally, then you can use the `Gmetric->useConfigFile()` method to set the connectivity details. 
+This method reads the local `gmond` config file to set the host and port of the server that should receive your metrics. 
+It also sets the correct name for your host when reporting your metrics.
 
-The default system host name is used when reporting data. If that's not what you want, you can specify the IP and host name that should be used instead, in the format `ip:hostname`.
-This is useful (and probably necessary) if the `gmond` agent on your host reports its metrics under a different host name.
-
-If you're running `gmond` locally, then the easiest option is to call the `Gmetric->useConfigFile()` method before sending any metrics. 
-This method reads the local `gmond` config file to set the destination host and port. It also sets the correct name for 
-your host when reporting your metrics.
+If you prefer, you can define these settings when you instantiate the Gmetric object. Or you can use the defaults: send 
+metrics to localhost at UDP port 8649, and use your host's default host name when reporting metrics.
+ 
 
 ### Gmetric fields
 
 * `name`: The name of the metric you're tracking.
-* `group`: An arbitrary group under which the metric should appear in the Ganglia web interface. Collect all of your metrics under a group named "app", or separate them by app, service, job, consumer, etc.
+* `group`: An arbitrary group under which the metric should appear in the Ganglia web interface. Collect all of your app-specific metrics under a group named "app", or separate them by service, job, consumer, type (such as error counts), etc.
 * `type`: The data type of the value. Valid values are:
   * `uint16`
   * `int16`
