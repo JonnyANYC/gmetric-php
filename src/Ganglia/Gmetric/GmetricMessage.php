@@ -6,6 +6,7 @@ use Exception;
 class GmetricMessage 
 {
     // Arithmetic expressions aren't allowed when defining constants? Really, PHP?
+    // @deprecated
     const ONE_MINUTE = 60;
     const ONE_HOUR = 3600;
     const ONE_DAY = 86400;
@@ -21,7 +22,7 @@ class GmetricMessage
 	private $isSpoofed;
 	private $slope;
 	
-	public function __construct($name, $group, $type, $value, $unit, $valueTTL = null, $metricTTL = null, $counter = null, $spoofedHostname = null) {
+	public function __construct($name, $group, $type, $value, $unit, $valueTTL, $metricTTL, $counter = null, $spoofedHostname = null) {
 
 		// TODO: Filter invalid characters. 
 		if (!empty($name)) { 
@@ -51,20 +52,19 @@ class GmetricMessage
 		// TODO: Filter invalid characters.
 		$this->unit = $unit;
 
-		if ($valueTTL != null && is_int($valueTTL)) {
-			$this->valueTTL = $valueTTL;
+		if (!is_int($valueTTL)) {
+			throw new Exception('"valueTTL" must be an integer.');
 		} else { 
-			$this->valueTTL = self::ONE_MINUTE;
+		    $this->valueTTL = $valueTTL;
 		}
 
-		if ($metricTTL != null && is_int($metricTTL)) {
-			$this->metricTTL = $metricTTL;
-		} else {
-		    // Note: the default metric TTL is 30 days, whereas the official binary's default is 0 (indefinite). 
-			$this->metricTTL = self::ONE_DAY * 30;
+		if (!is_int($metricTTL)) {
+			throw new Exception('"metricTTL" must be an integer.');
+		} else { 
+		    $this->metricTTL = $metricTTL;
 		}
 
-			if (strtolower($counter) === 'counter') {
+		if (strtolower($counter) === 'counter') {
             $this->slope = 1;
 		} else { 
             $this->slope = 3;

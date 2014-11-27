@@ -11,8 +11,10 @@ class GmetricTest extends PHPUnit_Framework_TestCase
                                                      "test.group", 
                                                      "uint16", 
                                                      12345, 
-                                                     "units");
-        
+                                                     "units",
+                                                     60,  // 1 minute
+                                                     2592000);  // 30 days
+
         $stubGmetric = $this->getMock('\jonnyanyc\Ganglia\Gmetric\Gmetric', array('send'));
         
         $stubGmetric->expects($this->once())

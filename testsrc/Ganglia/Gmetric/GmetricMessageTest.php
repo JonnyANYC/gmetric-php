@@ -12,15 +12,17 @@ class GmetricMessageTest extends PHPUnit_Framework_TestCase {
                                        $this->basicMessage["type"],
                                        $this->basicMessage["value"],
                                        $this->basicMessage["unit"], 
-                                       60, 
-                                       3600 * 24 * 30, 
+                                       $this->basicMessage["valueTTL"], 
+                                       $this->basicMessage["metricTTL"],
                                        'positive');
 
         $message = new GmetricMessage($this->basicMessage["name"],
                         $this->basicMessage["group"],
                         $this->basicMessage["type"],
                         $this->basicMessage["value"],
-                        $this->basicMessage["unit"]);
+                        $this->basicMessage["unit"], 
+                        $this->basicMessage["valueTTL"],
+                        $this->basicMessage["metricTTL"]);
         
         
         $this->assertEquals($expected, $message);
@@ -104,7 +106,10 @@ class GmetricMessageTest extends PHPUnit_Framework_TestCase {
                                $this->basicMessage["group"],
                                $this->basicMessage["type"],
                                $this->basicMessage["value"],
-                               $this->basicMessage["unit"])
+                               $this->basicMessage["unit"],
+                               $this->basicMessage["valueTTL"],
+                               $this->basicMessage["metricTTL"])
+                            
         );
 
 		$inputs[] = array( 
@@ -126,7 +131,10 @@ class GmetricMessageTest extends PHPUnit_Framework_TestCase {
                                null,
                                $this->basicMessage["type"],
                                $this->basicMessage["value"],
-                               $this->basicMessage["unit"])
+                               $this->basicMessage["unit"],
+                               $this->basicMessage["valueTTL"],
+                               $this->basicMessage["metricTTL"])
+                            
         );
 
 		return $inputs;

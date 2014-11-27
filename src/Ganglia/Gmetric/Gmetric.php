@@ -5,7 +5,13 @@ use Exception;
 
 class Gmetric 
 {
-	private $destHost;
+    // Arithmetic expressions aren't allowed when defining constants? Really, PHP?
+    const ONE_MINUTE = 60;
+    const ONE_HOUR = 3600;
+    const ONE_DAY = 86400;
+    const THIRTY_DAYS = 2592000;
+
+    private $destHost;
 	private $destPort;
 	private $myHostname;
 
@@ -25,6 +31,8 @@ class Gmetric
 		
 		if (!is_null($myHostname)) { 
 		    $this->myHostname = $myHostname;
+		} else { 
+		    $this->myHostname = null;
 		}
 	}
 
@@ -47,8 +55,8 @@ class Gmetric
                                 $type, 
                                 $value, 
                                 $unit, 
-                                $valueTTL = null, 
-                                $metricTTL = null, 
+                                $valueTTL = self::ONE_MINUTE, 
+                                $metricTTL = self::THIRTY_DAYS, 
                                 $counter = null, 
                                 $sampleRate = null) {
 
