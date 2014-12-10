@@ -1,9 +1,16 @@
 <?php
 namespace jonnyanyc\Ganglia\Gmetric;
 
+use Exception;
 
 class GmetricMessage 
 {
+    // Arithmetic expressions aren't allowed when defining constants? Really, PHP?
+    // @deprecated
+    const ONE_MINUTE = 60;
+    const ONE_HOUR = 3600;
+    const ONE_DAY = 86400;
+ 
 	private $name;
 	private $group;
 	private $type;
@@ -11,36 +18,63 @@ class GmetricMessage
 	private $unit;
 	private $valueTTL;
 	private $metricTTL;
-	private $slope;
 	private $spoof;
 	private $isSpoofed;
+	private $slope;
+	
+	public function __construct($name, $group, $type, $value, $unit, $valueTTL, $metricTTL, $counter = null, $spoofedHostname = null) {
 
-	public function __construct($name, $group, $type, $value, $unit, $valueTTL, $metricTTL, $slope = null, $spoofedHostname = null)
-	{
-		// TODO: Throw an exception if we don't have correct info to form a valid Gmetric message.
-		$this->name = $name;
-		$this->group = $group;
-		$this->type = $type;
-		$this->value = (string)$value;
-		$this->unit = $unit;
-		$this->valueTTL = $valueTTL;
-		$this->metricTTL = $metricTTL;
-		
-		switch (strtolower($slope)) { 
-			case 'zero':
-				$this->slope = 0;
-				break;
-			case 'positive':
-				$this->slope = 1;
-				break;
-			case 'negative':
-				$this->slope = 2;
-				break;
-			default:
-				$this->slope = 3;
+		// TODO: Filter invalid characters. 
+		if (!empty($name)) { 
+			$this->name = $name;
+		} else { 
+			throw new Exception('"name" must be a valid string.');
 		}
 
-		if (!is_null($spoofedHostname) && strlen($spoofedHostname) > 0) { 
+		// A null (missing) group is valid input. The message is constructed properly in this case.
+		// FIXME: Not sure I tested a null group thoroughly.
+		// TODO: Filter invalid characters.
+		$this->group = $group;
+
+		// FIXME: Use an enum to enforce a valid type.
+		if (!empty($type)) {
+		    $this->type = $type;
+		} else {
+		    throw new Exception('"type" must be a valid Gmetric type.');
+		}
+		
+		// FIXME: Is an empty or null string a valid input? Gmetric binary only requires that the option appears on the cmd line.
+		// TODO: At the least, validate that inputs are numeric for the numeric types.
+		// TODO: Filter invalid characters.
+		$this->value = (string)$value;
+
+		// FIXME: Is an empty or null string a valid input?
+		// TODO: Filter invalid characters.
+		$this->unit = $unit;
+
+		if (!is_int($valueTTL)) {
+			throw new Exception('"valueTTL" must be an integer.');
+		} else { 
+		    $this->valueTTL = $valueTTL;
+		}
+
+		if (!is_int($metricTTL)) {
+			throw new Exception('"metricTTL" must be an integer.');
+		} else { 
+		    $this->metricTTL = $metricTTL;
+		}
+
+		if (strtolower($counter) === 'counter') {
+            $this->slope = 1;
+		} else { 
+            $this->slope = 3;
+		}
+
+		if (!empty($spoofedHostname)) { 
+		    if (strpos($spoofedHostname, ":") === false) { 
+		        throw new Exception('The "spoofed hostname" is invalid. It must be of the form "ip:host".');
+		    }
+			// TODO: Filter invalid characters.
 			$this->spoof = $spoofedHostname;
 			$this->isSpoofed = 1;
 		} else { 
@@ -48,7 +82,7 @@ class GmetricMessage
 			$this->isSpoofed = 0;
 		}
 	}
-
+    
 	/**
 	 * Generate the header on-demand, based on the stored inputs. 
 	 */
@@ -62,6 +96,14 @@ class GmetricMessage
 		$format .= 'Na' . $this->getPaddedLength($this->name);
 		$format .= 'Na' . $this->getPaddedLength($this->unit);
 		$format .= 'NNNN';  // slope, tmax, dmax, number of extra name+value pairs
+
+		$extraFields = 0;
+		if ($this->isSpoofed) { 
+		    $extraFields++;
+		}
+		if ($this->group != null && strlen($this->group) > 0) { 
+		    $extraFields++;
+		}
 
 		$header = pack($format, 	128,
 								strlen($this->spoof),
@@ -78,7 +120,7 @@ class GmetricMessage
 								$this->slope,
 								$this->valueTTL,  // tmax
 								$this->metricTTL,  // dmax
-								1 + $this->isSpoofed);  // number of extra name+value pairs
+								$extraFields);  // number of extra name+value pairs
 
 		
 		if ($this->isSpoofed) { 
@@ -92,7 +134,7 @@ class GmetricMessage
 											$this->spoof);
 		}
 
-		if (!is_null($this->group) && strlen($this->group) > 0) { 
+		if ($this->group != null && strlen($this->group) > 0) { 
 
 			$groupFormat = 'Na' . $this->getPaddedLength('GROUP');
 			$groupFormat .= 'Na' . $this->getPaddedLength($this->group);
@@ -115,8 +157,8 @@ class GmetricMessage
 		$format .= 'Na' . $this->getPaddedLength($this->spoof);
 		$format .= 'Na' . $this->getPaddedLength($this->name);
 		$format .= 'N';  // is spoofed
-		$format .= 'NA' . $this->getPaddedLength('%s');
-		$format .= 'NA' . $this->getPaddedLength($this->value);
+		$format .= 'Na' . $this->getPaddedLength('%s');  // format string
+		$format .= 'Na' . $this->getPaddedLength($this->value);
 		
 		return pack($format, 	128+5,  // message type
 								strlen($this->spoof),
@@ -125,7 +167,7 @@ class GmetricMessage
 								$this->name,
 								$this->isSpoofed,
 								strlen('%s'),
-								'%s',  // format string?
+								'%s',
 								strlen($this->value),
 								$this->value);				
 	}
