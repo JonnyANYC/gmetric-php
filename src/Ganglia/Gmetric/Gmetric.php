@@ -7,35 +7,63 @@ class Gmetric
 {
     // Arithmetic expressions aren't allowed when defining constants? Really, PHP?
     const ONE_MINUTE = 60;
-    const ONE_HOUR = 3600;
-    const ONE_DAY = 86400;
-    const THIRTY_DAYS = 2592000;
+    const ONE_HOUR = 3600;  // 60 * 60
+    const ONE_DAY = 86400;  // 60 * 60 * 24
+    const THIRTY_DAYS = 2592000;  // 60 * 60 * 24 * 30
 
-    private $destHost;
-	private $destPort;
+    const DEFAULT_DESTINATION_HOST = "localhost";
+    const DEFAULT_DESTINATION_PORT = 8649;
+    
+    private $destinations;
 	private $myHostname;
 
-	public function __construct($destHost = null, $destPort = null, $myHostname = null) {
-		
-		if (is_null($destHost)) { 
-			$this->destHost = "localhost";
-		} else { 
-			$this->destHost = $destHost;
+	public function __construct($destinations = null, $myHostname = null) {
+
+	    if (empty($destinations)) {
+
+	        $this->destinations = array( array(self::DEFAULT_DESTINATION_HOST, self::DEFAULT_DESTINATION_PORT));
+
+	    } elseif (!is_array($destinations)) {
+
+	            $destination = $this->splitDestinationString($destinations);
+                $this->destinations = array($destination);
+
+	    } else {
+
+	        $normalizedDestinations = array();
+	        foreach ($destinations as $destination) {
+	            $normalizedDestinations[] = $this->splitDestinationString($destination);
+	        }
 		}
-		
-		if (is_null($destPort)) {
-			$this->destPort = 8649;
-		} else { 
-			$this->destPort = $destPort;
-		}
-		
-		if (!is_null($myHostname)) { 
-		    $this->myHostname = $myHostname;
-		} else { 
-		    $this->myHostname = null;
-		}
+
+	    if (!is_null($myHostname)) {
+	        $this->myHostname = $myHostname;
+	    } else {
+	        $this->myHostname = null;
+	    }
+	     
 	}
 
+	private function splitDestinationString($destination) { 
+
+	    $parts = explode(":", $destination, 2);
+
+	    // Check for an invalid host name.
+	    if (empty($parts[0])) {
+	        $parts[0] = self::DEFAULT_DESTINATION_HOST;
+	    }
+
+	    // Check for an invalid port number.
+	    if (!is_numeric($parts[1]) || intval($parts[1]) != $parts[1]) { 
+	        $parts[1] = self::DEFAULT_DESTINATION_PORT;
+	    } else { 
+	        $parts[1] = intval($parts[1]);
+	    }
+
+	    return $parts;
+	}
+	
+	
 	/**
 	 * Send a metric to Ganglia.
 	 * 
@@ -71,15 +99,17 @@ class Gmetric
 
 	protected function send($message) { 
 		
-		$this->sendViaFileHandle($message);
+        foreach ($this->destinations as $destination) { 
+            $this->sendViaFileHandle($message, $destination[0], $destination[1]);
+        }
 	}
-	
-	private function sendViaFileHandle($message)
+
+	private function sendViaFileHandle($message, $host, $port)
 	{
 		try { 
 			
 			// Open the UDP socket to send the data.
-			$socket = @fsockopen("udp://" . $this->destHost, $this->destPort);
+			$socket = @fsockopen("udp://" . $host, $port);
 		
 			if (!$socket) {
 				// TODO: Log.warn: "Socket failed to open"
@@ -176,21 +206,34 @@ class Gmetric
 	        return;
 	    }
 	
-	    // TODO: Support more than one udp_send_channel.
-	    $configUdpSendInner = $configUdpSend[2][0];
-	
-	    // grep for the destination host.
-	    // TODO: Support UTF-8 host names.
-	    $hostMatchCount = preg_match('/$\s*host\s*=\s*"?([\w\d:.-]+)"?\s*^/im', $configUdpSendInner, $hostMatches);
-	    if ($hostMatchCount) {
-	        $this->destHost = $hostMatches[1];
-	    }
-	
-	    // grep for the destination port.
-	    $portMatchCount = preg_match('/$\s*port\s*=\s*"?(\d+)"?\s*^/im', $configUdpSendInner, $portMatches);
-	    if ($portMatchCount) {
-	        $this->destPort = $portMatches[1];
-	    }
+	    $destinations = array();
+        foreach ($configUdpSend[2] as $configUdpSendInner) { 
+
+            $destHost = "";
+            $destPort = "";
+            // grep for the destination host.
+            // TODO: Support UTF-8 host names.
+            $hostMatchCount = preg_match('/$\s*host\s*=\s*"?([\w\d:.-]+)"?\s*^/im', $configUdpSendInner, $hostMatches);
+            if ($hostMatchCount) {
+                $destHost = $hostMatches[1];
+            } else { 
+                $destHost = self::DEFAULT_DESTINATION_HOST;
+            }
+
+            // grep for the destination port.
+            $portMatchCount = preg_match('/$\s*port\s*=\s*"?(\d+)"?\s*^/im', $configUdpSendInner, $portMatches);
+            if ($portMatchCount) {
+                $destPort = $portMatches[1];
+            } else { 
+                $destPort = self::DEFAULT_DESTINATION_PORT;
+            }
+            
+            $destinations[] = array($destHost, $destPort);
+        }
+        
+        if (!empty($destinations)) { 
+            $this->destinations = $destinations;
+        }
 	
 	    // Grep for host override in the global section. If found, then force a spoofed host name.
 	    // TODO: Extract method.

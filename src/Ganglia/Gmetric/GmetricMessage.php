@@ -5,12 +5,6 @@ use Exception;
 
 class GmetricMessage 
 {
-    // Arithmetic expressions aren't allowed when defining constants? Really, PHP?
-    // @deprecated
-    const ONE_MINUTE = 60;
-    const ONE_HOUR = 3600;
-    const ONE_DAY = 86400;
- 
 	private $name;
 	private $group;
 	private $type;

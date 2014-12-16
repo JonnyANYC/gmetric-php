@@ -23,5 +23,9 @@ class GmetricTest extends PHPUnit_Framework_TestCase
         
         $stubGmetric->sendMetric("test.name", "test.group", "uint16", 12345, "units");
     }
+
+    // TODO Add several tests for the useConfigFile() method, if I can fake out the calls to the file system.
+    
+    // TODO Add a few tests for the splitDestinationString() method.
 }
 
