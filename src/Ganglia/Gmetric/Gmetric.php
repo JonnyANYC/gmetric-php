@@ -13,20 +13,37 @@ class Gmetric
 
     const DEFAULT_DESTINATION_HOST = "localhost";
     const DEFAULT_DESTINATION_PORT = 8649;
-    
+
     private $destinations;
 	private $myHostname;
 
-	public function __construct($destinations = null, $myHostname = null) {
+	public function __construct( $configFile = '/etc/ganglia/gmond.conf' ) {
 
-	    if (empty($destinations)) {
+	    // FIXME: Filter inputs.
+	    if ( is_readable($configFile) ) {
+	        $this->parseConfigFile($configFile);
+	    } // TODO: log a warning if the file isn't readable.
+	    
+	    if ( $this->destinations == null ) { 
+	        $this->destinations = array( array(self::DEFAULT_DESTINATION_HOST, self::DEFAULT_DESTINATION_PORT));
+	    }
+	}
+	
+	public function getDestinations( ) { 
+	    return $this->destinations;
+	}
+	
+	public function setDestinations( $destinations ) { 
+
+	    // FIXME: Filter inputs.
+	    if ( empty($destinations) ) {
 
 	        $this->destinations = array( array(self::DEFAULT_DESTINATION_HOST, self::DEFAULT_DESTINATION_PORT));
 
-	    } elseif (!is_array($destinations)) {
+	    } elseif ( !is_array($destinations) ) {
 
-	            $destination = $this->splitDestinationString($destinations);
-                $this->destinations = array($destination);
+	        $destination = $this->splitDestinationString($destinations);
+            $this->destinations = array($destination);
 
 	    } else {
 
@@ -34,14 +51,17 @@ class Gmetric
 	        foreach ($destinations as $destination) {
 	            $normalizedDestinations[] = $this->splitDestinationString($destination);
 	        }
+	        $this->destinations = $normalizedDestinations;
 		}
-
-	    if (!is_null($myHostname)) {
-	        $this->myHostname = $myHostname;
-	    } else {
-	        $this->myHostname = null;
-	    }
-	     
+	}
+	
+	public function getSourceHostname( ) { 
+	    return $this->myHostname;
+	}
+	
+	public function setSourceHostname( $myHostname ) { 
+	    // FIXME: Filter inputs.
+        $this->myHostname = $myHostname;
 	}
 
 	private function splitDestinationString($destination) { 
@@ -182,20 +202,20 @@ class Gmetric
 	 * command-line context.
 	 * @param string $configFile The absolute path to the local Gmond conf file. Defaults to /etc/ganglia/gmond.conf.
 	 */
-    public function useConfigFile($configFile = '/etc/ganglia/gmond.conf') {
-	
+    private function parseConfigFile($configFile) {
+
         // FIXME: Filter inputs.
 	    $configFile = @file_get_contents($configFile);
 	
 	    if (empty($configFile)) {
-	        // TODO: Log a warning if the file isn't found
-	        return;
+	        return;  // TODO: Log a warning.
 	    }
 
 	    // TODO: Follow include directives in the conf file.
 	
 	    // Grep for 'udp_send_channel { [host|port] }'
 	    // TODO: Support multicast send channels.
+	    // TODO: Support the TTL parameter.
 	    // TODO: Extract method.
 	    $configUdpSendCount = preg_match_all('/(^|\n)\s*udp_send_channel\s*(\{.*(host|port).*\})/isU',
 	                    $configFile,
@@ -269,7 +289,7 @@ class Gmetric
 	    // TODO: check if the official binary use the cluster config value. I think it only uses the cmd-line cluster value if any.
 	}
 
-	
+
 	// TODO: Consider implementing a counter feature that stores incoming data in a static variable.
 	// The calling class can ask to send the summed data explicitly, or it will be sent at teardown (if not cleared).
 	

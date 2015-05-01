@@ -4,7 +4,6 @@ require __DIR__ . "/../vendor/autoload.php";
 use jonnyanyc\Ganglia\Gmetric\Gmetric;
 
 $gmetric = new Gmetric();
-$gmetric->useConfigFile();
 
 $gmetric->sendMetric("testapp.testmetric1", "app", "uint16", 2100, "count", Gmetric::ONE_HOUR /2, Gmetric::ONE_DAY);
 $gmetric->sendMetric("testapp.testmetric2", "app", "float", 1.23, "dollars", Gmetric::ONE_HOUR /2, Gmetric::ONE_DAY);
