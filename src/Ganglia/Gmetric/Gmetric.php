@@ -120,70 +120,129 @@ class Gmetric
 	protected function send($message) { 
 		
         foreach ($this->destinations as $destination) { 
+            // TODO: Confirm that the sockets approach is fast, then check extension_loaded('sockets').
             $this->sendViaFileHandle($message, $destination[0], $destination[1]);
         }
 	}
 
-	private function sendViaFileHandle($message, $host, $port)
-	{
-		try { 
+	private function sendViaFileHandle($message, $host, $port) {
+	    // TODO: Skip this UDP destination if it isn't supported by the file handle API (multicast, binding, etc.).
+	    
+        try { 
 			
-			// Open the UDP socket to send the data.
-			$socket = @fsockopen("udp://" . $host, $port);
+            // Open the UDP socket to send the data.
+            $socket = @fsockopen("udp://" . $host, $port);
 		
-			if (!$socket) {
-				// TODO: Log.warn: "Socket failed to open"
-				// TODO: Use a finally block instead (PHP 5.5).
-				throw new Exception("Cancelling send.");
-			}
+            if (!$socket) {
+                // TODO: Log.warn: "Socket failed to open"
+                // TODO: Use a finally block instead (PHP 5.5).
+                throw new Exception("Error. Cancelling send.");
+            }
 
-			@socket_set_blocking($socket, FALSE);
+            @socket_set_blocking($socket, FALSE);
 
-			// Send the header.
-			$header = $message->getHeader();
-			$bytesWritten = @fwrite($socket, $header);
+            // Send the header.
+            $header = $message->getHeader();
+            $bytesWritten = @fwrite($socket, $header);
 		
-			if ($bytesWritten < strlen($header)) {
-				// TODO: Log.warn "Only wrote $bytesWritten bytes of the header."
-				// TODO: Use a finally block instead (PHP 5.5).
-				throw new Exception("Cancelling send.");
-			}
+            if ($bytesWritten < strlen($header)) {
+                // TODO: Log.warn "Only wrote $bytesWritten bytes of the header."
+                // TODO: Use a finally block instead (PHP 5.5).
+                throw new Exception("Error. Cancelling send.");
+            }
 		
-			// Send the payload.
-			$payload = $message->getPayload();
-			$bytesWritten = @fwrite($socket, $payload);
+            // Send the payload.
+            $payload = $message->getPayload();
+            $bytesWritten = @fwrite($socket, $payload);
 		
-			if ($bytesWritten < strlen($payload)) {
-				// TODO: Log.warn "Only wrote $bytesWritten bytes of the payload."
-				// TODO: Use a finally block instead (PHP 5.5).
-				throw new Exception("Cancelling send.");
-			}
+            if ($bytesWritten < strlen($payload)) {
+                // TODO: Log.warn "Only wrote $bytesWritten bytes of the payload."
+                // TODO: Use a finally block instead (PHP 5.5).
+                throw new Exception("Error. Cancelling send.");
+            }
 
-			// Close the socket.
-			@fclose($socket);
+            // Close the socket.
+            @fclose($socket);
 		
-			// dereference the handles.
-			$socket = null;
-			$header = null;
-			$payload = null;
+            // dereference the handles.
+            $socket = null;
+            $header = null;
+            $payload = null;
 			
 		} catch (Exception $e) { 
 
-			// TODO: Move this to a finally block (PHP 5.5).
-			if ($socket) {
-				try { 
-					@fclose($socket);
-				} catch (Exception $e2) {}
-			}
+            // TODO: Move this to a finally block (PHP 5.5).
+            if ($socket) {
+                try { 
+                    @fclose($socket);
+                } catch (Exception $e2) {}
+            }
 			
-			$socket = null;
-			return;
+            $socket = null;
+            return;
 		}
 	}
 
-	private function sendViaSocket()
-	{
-		throw new Exception("Not implemented yet.");
+	private function sendViaSocket($message, $host, $port) {
+		// Will need to take this approach for multicast and binding.
+	    // Might require PHP 5.4 for multicast.
+
+        try {
+            // Create the UDP socket.
+            $socket = @socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+		    
+            if (!$socket) {
+		        // TODO: Log.warn: "Socket failed to open"
+		        // TODO: Use a finally block instead (PHP 5.5).
+                throw new Exception("Error. Cancelling send.");
+            }
+		    
+            @socket_set_nonblock($socket);
+
+		    // Send the header.
+            $header = $message->getHeader();
+            // TODO: consider using socket_connect and socket_send instead
+            $bytesWritten = @socket_sendto($socket, $header, strlen($header), 0, $host, $port);
+		    
+            if ($bytesWritten < strlen($header)) {
+                // TODO: Log.warn "Only wrote $bytesWritten bytes of the header."
+                // TODO: Use a finally block instead (PHP 5.5).
+                throw new Exception("Error. Cancelling send.");
+            }
+
+            // Send the payload.
+            $payload = $message->getPayload();
+            // TODO: try adding EOF flag.
+            $bytesWritten = @socket_sendto($socket, $payload, strlen($payload), 0, $host, $port);
+
+            if ($bytesWritten < strlen($payload)) {
+                // TODO: Log.warn "Only wrote $bytesWritten bytes of the payload."
+                // TODO: Use a finally block instead (PHP 5.5).
+                throw new Exception("Error. Cancelling send.");
+            }
+		    
+            // Close the socket.
+            @socket_shutdown($socket);
+            @socket_close($socket);
+		    		    
+            // dereference the handles.
+            $socket = null;
+            $header = null;
+            $payload = null;
+		    	
+        } catch (Exception $e) {
+
+            // TODO: Move this to a finally block (PHP 5.5).
+            if ($socket) {
+                try {
+                    @socket_shutdown($socket);
+                    @socket_close($socket);
+                } catch (Exception $e2) {}
+            }
+
+            $socket = null;
+            return;
+        }
 	}
 
 	
@@ -214,8 +273,9 @@ class Gmetric
 	    // TODO: Follow include directives in the conf file.
 	
 	    // Grep for 'udp_send_channel { [host|port] }'
-	    // TODO: Support multicast send channels.
+	    // TODO: Support multicast send channels and the bind parameters.
 	    // TODO: Support the TTL parameter.
+	    // TODO: Consider looking for the "mute" global, and suppressing all communications if it's present. Check gmetric source.
 	    // TODO: Extract method.
 	    $configUdpSendCount = preg_match_all('/(^|\n)\s*udp_send_channel\s*(\{.*(host|port).*\})/isU',
 	                    $configFile,
